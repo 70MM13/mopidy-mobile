@@ -42,17 +42,16 @@
           $log.warn('Mopidy connection offline');
           break;
         }
-        if (event.indexOf('websocket:') !== 0) {
-          $rootScope.$applyAsync(function(scope) {
-            scope.$broadcast('connection:' + event, data);
-          });
-        }
+        $rootScope.$applyAsync(function(scope) {
+          scope.$broadcast('connection:' + event, data);
+        });
       }
 
       function connect() {
         loading.show();
         return mopidy(settings, connectionTimeout).then(function(mopidy) {
-          mopidy.on(notify.bind(mopidy));
+          mopidy.on('state', notify.bind(mopidy));
+          mopidy.on('event', notify.bind(mopidy));
           return mopidy;
         }).finally(loading.hide);
       }
@@ -97,7 +96,8 @@
           settings.webSocketUrl = webSocketUrl;
         }
         if (mopidy) {
-          mopidy.on(notify.bind(mopidy));
+          mopidy.on('state', notify.bind(mopidy));
+          mopidy.on('event', notify.bind(mopidy));
           connection._promise = $q.when(mopidy);
         }
         return connection().catch(function(error) {

@@ -17,7 +17,7 @@
     return obj;
   }
 
-  function shim(mopidy) {
+  function shim(mopidy, $q) {
     // check if Mopidy method has given named parameter
     function hasParam(method, name) {
       for (var params = method.params, i = params.length - 1; i >= 0; --i) {
@@ -41,7 +41,7 @@
       var lookup = mopidy.library.lookup;
       mopidy.library.lookup = function(params) {
         if ('uris' in params) {
-          return Mopidy.when.all(params.uris.map(function(uri) {
+          return $q.all(params.uris.map(function(uri) {
             return lookup({uri: uri});
           })).then(function(results) {
             return zipObject(params.uris, results);
@@ -111,7 +111,7 @@
         },
         // FIXME: see https://github.com/mopidy/mopidy/issues/977
         getOptions: function() {
-          return Mopidy.when.all([
+          return $q.all([
             mopidy.tracklist.getConsume(),
             mopidy.tracklist.getRandom(),
             mopidy.tracklist.getRepeat(),
@@ -128,7 +128,7 @@
           });
         },
         getStreamTitle: function() {
-          return Mopidy.when(null);
+          return $q.when(null);
         }
       },
       library: {
@@ -210,7 +210,7 @@
           if (resolve) {
             reject = null;
             $log.info('Connected');
-            resolve(shim(mopidy));
+            resolve(shim(mopidy, $q));
           }
         });
         mopidy.once('state:offline', function() {
@@ -228,7 +228,8 @@
         } else {
           $log.info('Connecting to default WebSocket');
         }
-        mopidy.on(logEvent);
+        mopidy.on('event', logEvent);
+        mopidy.on('state', logEvent);
         mopidy.connect();
       });
     };
